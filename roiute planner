@@ -1,0 +1,94 @@
+import heapq
+import networkx as nx
+import matplotlib.pyplot as plt
+
+class RoutePlanner:
+    def __init__(self):
+        self.graph = {}
+
+    def add_location(self, location):
+        if location not in self.graph:
+            self.graph[location] = {}
+
+    def add_route(self, from_location, to_location, distance):
+        self.add_location(from_location)
+        self.add_location(to_location)
+        self.graph[from_location][to_location] = distance
+        self.graph[to_location][from_location] = distance  # Bidirectional route
+
+    def dijkstra(self, start, end):
+        pq = [(0, start)]  
+        distances = {node: float('inf') for node in self.graph}  
+        distances[start] = 0  
+        previous_nodes = {}  
+
+        while pq:
+            current_distance, current_node = heapq.heappop(pq)
+
+            if current_node == end:
+                break  
+
+            for neighbor, weight in self.graph[current_node].items():
+                distance = current_distance + weight
+
+                if distance < distances[neighbor]:
+                    distances[neighbor] = distance
+                    previous_nodes[neighbor] = current_node
+                    heapq.heappush(pq, (distance, neighbor))
+
+        path, node = [], end
+        while node in previous_nodes:
+            path.insert(0, node)
+            node = previous_nodes[node]
+        if path:
+            path.insert(0, start)
+
+        return path, distances[end] if distances[end] != float('inf') else None
+
+    def display_graph(self):
+        G = nx.Graph()
+        for node in self.graph:
+            for neighbor, weight in self.graph[node].items():
+                G.add_edge(node, neighbor, weight=weight)
+
+        pos = nx.spring_layout(G)
+        labels = nx.get_edge_attributes(G, 'weight')
+
+        plt.figure(figsize=(8, 6))
+        nx.draw(G, pos, with_labels=True, node_color='lightblue', node_size=2000, edge_color='gray')
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
+        plt.title("Route Planner Graph")
+        plt.show()
+
+
+# Create Route Planner
+planner = RoutePlanner()
+
+# Add Routes (Locations & Distances)
+planner.add_route("A", "B", 5)
+planner.add_route("A", "C", 10)
+planner.add_route("B", "D", 7)
+planner.add_route("B", "E", 8)
+planner.add_route("C", "F", 6)
+planner.add_route("D", "E", 3)
+planner.add_route("D", "G", 4)
+planner.add_route("E", "H", 9)
+planner.add_route("F", "I", 5)
+planner.add_route("G", "H", 2)
+planner.add_route("H", "I", 7)
+
+# Get User Input for Route
+start = input("Enter starting location: ")
+end = input("Enter destination location: ")
+
+# Find Shortest Path
+route, cost = planner.dijkstra(start, end)
+
+if route:
+    print(f"\n🚗 Shortest Route from {start} to {end}: {' → '.join(route)}")
+    print(f"🛣️ Total Distance: {cost} units\n")
+else:
+    print("\n❌ No route found between the selected locations.")
+
+# Display Graph
+planner.display_graph()
